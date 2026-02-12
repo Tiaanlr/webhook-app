@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hollard — Backend Controller</title>
+    <style>
+      :root {
+        --purple: #4a2767;
+        --purple-dark: #3a1f52;
+        --purple-light: #5e3580;
+        --orange: #e94e0f;
+        --orange-light: #f8996d;
+        --white: #ffffff;
+        --gray-50: #faf9fb;
+        --gray-100: #f3f1f5;
+        --gray-200: #e5e1ea;
+        --gray-300: #c9c2d1;
+        --gray-500: #8a7f96;
+        --gray-700: #4a4554;
+        --gray-900: #1e1a24;
+        --success: #2e9e5a;
+        --error: #d93025;
+        --mono: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--gray-50);
+        color: var(--gray-900);
+        min-height: 100vh;
+      }
+
+      /* ── Nav ── */
+      nav {
+        background: var(--purple);
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        height: 64px;
+        box-shadow: 0 2px 8px rgba(74, 39, 103, 0.3);
+      }
+      nav .logo {
+        height: 32px;
+        margin-right: 24px;
+      }
+      nav .divider {
+        width: 1px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.2);
+        margin-right: 24px;
+      }
+      nav .title {
+        color: var(--white);
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+      nav .sse-status {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8rem;
+      }
+      nav .sse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--error);
+      }
+      nav .sse-dot.connected {
+        background: var(--success);
+      }
+
+      /* ── Config bar ── */
+      .config-bar {
+        background: var(--white);
+        border-bottom: 1px solid var(--gray-200);
+        padding: 12px 32px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .config-bar label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--purple);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+      .config-bar select {
+        padding: 8px 12px;
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: var(--gray-900);
+        background: var(--white);
+        min-width: 200px;
+        cursor: pointer;
+      }
+      .config-bar select:focus {
+        outline: none;
+        border-color: var(--purple-light);
+      }
+      .config-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+      }
+      .config-btn.primary {
+        background: var(--purple);
+        color: var(--white);
+      }
+      .config-btn.primary:hover {
+        background: var(--purple-light);
+      }
+      .config-btn.secondary {
+        background: none;
+        color: var(--purple);
+        border: 1px solid var(--gray-200);
+      }
+      .config-btn.secondary:hover {
+        background: var(--gray-100);
+      }
+      .config-btn.danger {
+        background: none;
+        color: var(--error);
+        border: 1px solid var(--gray-200);
+      }
+      .config-btn.danger:hover {
+        background: #fef2f1;
+      }
+      .config-msg {
+        font-size: 0.8rem;
+        color: var(--success);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .config-msg.show {
+        opacity: 1;
+      }
+      .config-sep {
+        width: 1px;
+        height: 24px;
+        background: var(--gray-200);
+      }
+
+      /* ── Main ── */
+      .container {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 24px;
+      }
+
+      /* ── Rule Card ── */
+      .rule-card {
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: 10px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+      }
+      .rule-card:hover {
+        box-shadow: 0 2px 12px rgba(74, 39, 103, 0.08);
+      }
+      .rule-card.active {
+        border-color: var(--orange);
+      }
+
+      .rule-header {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        gap: 16px;
+      }
+
+      .rule-name {
+        min-width: 200px;
+      }
+      .rule-name .rule-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--purple);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .rule-name .rule-num {
+        background: var(--purple);
+        color: var(--white);
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .rule-name .rule-desc {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin-top: 2px;
+      }
+
+      /* ── Toggle switch ── */
+      .toggle {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        flex-shrink: 0;
+      }
+      .toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .toggle .slider {
+        position: absolute;
+        inset: 0;
+        background: var(--gray-300);
+        border-radius: 13px;
+        cursor: pointer;
+        transition: background 0.25s;
+      }
+      .toggle .slider::before {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        left: 3px;
+        bottom: 3px;
+        background: var(--white);
+        border-radius: 50%;
+        transition: transform 0.25s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+      .toggle input:checked + .slider {
+        background: var(--orange);
+      }
+      .toggle input:checked + .slider::before {
+        transform: translateX(22px);
+      }
+
+      .rule-status {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        width: 32px;
+      }
+      .rule-status.on {
+        color: var(--orange);
+      }
+      .rule-status.off {
+        color: var(--gray-500);
+      }
+
+      /* ── Reply box ── */
+      .reply-box {
+        flex: 1;
+        min-width: 0;
+        background: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--gray-700);
+        max-height: 60px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .reply-box.empty {
+        color: var(--gray-500);
+        font-style: italic;
+        font-family: inherit;
+      }
+      .reply-box.error {
+        color: var(--error);
+        border-color: #f5c6c2;
+        background: #fef2f1;
+      }
+      .reply-box.success {
+        color: var(--success);
+        border-color: #b7e4c7;
+        background: #f0faf4;
+      }
+
+      /* ── Expand button ── */
+      .expand-btn {
+        background: none;
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        color: var(--purple);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s;
+      }
+      .expand-btn:hover {
+        background: var(--purple);
+        color: var(--white);
+        border-color: var(--purple);
+      }
+      .expand-btn:disabled {
+        opacity: 1;
+        cursor: pointer;
+      }
+
+      /* ── Customer bar ── */
+      .customer-bar {
+        max-width: 1040px;
+        margin: 24px auto 0;
+        padding: 0 24px;
+        display: flex;
+        gap: 16px;
+      }
+      .customer-bar .cust-field {
+        flex: 1;
+      }
+      .customer-bar .cust-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gray-500);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+      }
+      .customer-bar .cust-input {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        color: var(--gray-900);
+        font-size: 0.9rem;
+      }
+      .customer-bar .cust-input:focus {
+        outline: none;
+        border-color: var(--purple-light);
+        box-shadow: 0 0 0 3px rgba(74, 39, 103, 0.1);
+      }
+
+      /* ── Detail panel ── */
+      .rule-details {
+        display: none;
+        border-top: 1px solid var(--gray-200);
+        padding: 16px 20px;
+        background: var(--gray-100);
+      }
+      .rule-details.open {
+        display: block;
+      }
+
+      .detail-row {
+        margin-bottom: 12px;
+      }
+      .detail-row:last-child {
+        margin-bottom: 0;
+      }
+      .detail-row-inline {
+        display: flex;
+        gap: 16px;
+      }
+      .detail-row-inline .detail-field {
+        flex: 1;
+      }
+      .detail-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gray-500);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+      }
+      .detail-input {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        color: var(--gray-900);
+        font-family: var(--mono);
+        font-size: 0.85rem;
+      }
+      .detail-input:focus {
+        outline: none;
+        border-color: var(--purple-light);
+        box-shadow: 0 0 0 3px rgba(74, 39, 103, 0.1);
+      }
+      textarea.detail-input {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      /* ── Loading spinner on toggle ── */
+      .rule-header .spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--gray-200);
+        border-top-color: var(--orange);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        display: none;
+      }
+      .rule-header .spinner.active {
+        display: block;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── Footer ── */
+      .footer {
+        text-align: center;
+        padding: 32px 0 16px;
+        font-size: 0.75rem;
+        color: var(--gray-500);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav>
+      <img src="/hollard-logo.svg" alt="Hollard" class="logo" />
+      <div class="divider"></div>
+      <span class="title">Backend Controller</span>
+      <div class="sse-status">
+        <div class="sse-dot" id="sse-dot"></div>
+        <span id="sse-label">Disconnected</span>
+      </div>
+    </nav>
+
+    <!-- Config selector bar -->
+    <div class="config-bar">
+      <label for="config-select">Configuration</label>
+      <select id="config-select">
+        <option value="">— Select saved config —</option>
+      </select>
+      <button class="config-btn secondary" id="load-btn">Load</button>
+      <button class="config-btn danger" id="delete-btn">Delete</button>
+      <div class="config-sep"></div>
+      <button class="config-btn primary" id="save-btn">Save Current</button>
+      <span class="config-msg" id="config-msg"></span>
+    </div>
+
+    <!-- Customer fields (shared across all rules) -->
+    <div class="customer-bar">
+      <div class="cust-field">
+        <div class="cust-label">Customer Name</div>
+        <input
+          type="text"
+          class="cust-input"
+          id="custname"
+          placeholder="e.g. John Smith"
+        />
+      </div>
+      <div class="cust-field">
+        <div class="cust-label">Customer Telephone Number</div>
+        <input
+          type="tel"
+          class="cust-input"
+          id="custtel"
+          placeholder="e.g. 0821234567"
+        />
+      </div>
+    </div>
+
+    <div class="container" id="rules-container"></div>
+
+    <div class="footer">Hollard Insurance &mdash; Backend Controller</div>
+
+    <script>
+      // ── Rule definitions (defaults) ──
+      const STUBBER_ENDPOINT =
+        "https://webhooks.stubber.com/im/2026-02-12-STUB-ACJZ/create_whatsapp_message_stub";
+
+      const defaultRules = [
+        {
+          id: 1,
+          name: "Rule 1",
+          label: "SAT In Progress",
+          desc: "Self-assessment initiated via WhatsApp (SMS fallback)",
+          endpoint: STUBBER_ENDPOINT,
+          payload: '{ "message_id": "sat_in_progress" }',
+        },
+        {
+          id: 2,
+          name: "Rule 2",
+          label: "Accepted",
+          desc: "Assessor appointed, will contact insured",
+          endpoint: STUBBER_ENDPOINT,
+          payload: '{ "message_id": "accepted" }',
+        },
+        {
+          id: 3,
+          name: "Rule 3",
+          label: "Request Parts Sourcing",
+          desc: "Assessment complete, obtaining part prices",
+          endpoint: STUBBER_ENDPOINT,
+          payload: '{ "message_id": "request_parts_sourcing" }',
+        },
+        {
+          id: 4,
+          name: "Rule 4",
+          label: "Parts Sourcing Complete",
+          desc: "Part pricing received, finalising report",
+          endpoint: STUBBER_ENDPOINT,
+          payload: '{ "message_id": "parts_sourcing_complete" }',
+        },
+        {
+          id: 5,
+          name: "Rule 5",
+          label: "Awaiting Authorisation",
+          desc: "Quotes received, further updates via broker",
+          endpoint: STUBBER_ENDPOINT,
+          payload: '{ "message_id": "awaiting_authorisation" }',
+        },
+        {
+          id: 6,
+          name: "Rule 6",
+          label: "Authorised",
+          desc: "Claim authorised, repairer to arrange booking",
+          endpoint: STUBBER_ENDPOINT,
+          payload: '{ "message_id": "authorised" }',
+        },
+      ];
+
+      const container = document.getElementById("rules-container");
+      const configSelect = document.getElementById("config-select");
+      const configMsg = document.getElementById("config-msg");
+
+      // ── SSE ──
+      const sseDot = document.getElementById("sse-dot");
+      const sseLabel = document.getElementById("sse-label");
+      const sse = new EventSource("/api/events");
+      sse.onopen = () => {
+        sseDot.classList.add("connected");
+        sseLabel.textContent = "Connected";
+      };
+      sse.onerror = () => {
+        sseDot.classList.remove("connected");
+        sseLabel.textContent = "Disconnected";
+      };
+      sse.onmessage = (e) => {
+        console.log("SSE event:", JSON.parse(e.data));
+      };
+
+      // ── Flash message helper ──
+      function flashMsg(text, isError) {
+        configMsg.textContent = text;
+        configMsg.style.color = isError ? "var(--error)" : "var(--success)";
+        configMsg.classList.add("show");
+        setTimeout(() => configMsg.classList.remove("show"), 2500);
+      }
+
+      // ── Build rule cards ──
+      function buildRuleCards() {
+        container.innerHTML = "";
+
+        defaultRules.forEach((rule) => {
+          const card = document.createElement("div");
+          card.className = "rule-card";
+          card.id = `rule-${rule.id}`;
+          card.innerHTML = `
+          <div class="rule-header">
+            <div class="rule-name">
+              <div class="rule-title"><span class="rule-num">${rule.name}</span> ${rule.label}</div>
+              <div class="rule-desc">${rule.desc}</div>
+            </div>
+
+            <label class="toggle">
+              <input type="checkbox" id="toggle-${rule.id}">
+              <span class="slider"></span>
+            </label>
+            <span class="rule-status off" id="status-${rule.id}">OFF</span>
+
+            <div class="spinner" id="spinner-${rule.id}"></div>
+
+            <div class="reply-box empty" id="reply-${rule.id}">No response yet</div>
+
+            <button class="expand-btn" id="expand-${rule.id}">Details &#9662;</button>
+          </div>
+
+          <div class="rule-details" id="details-${rule.id}">
+            <div class="detail-row">
+              <div class="detail-label">Destination Endpoint</div>
+              <input type="url" class="detail-input" id="endpoint-${rule.id}"
+                value="${rule.endpoint}"
+                placeholder="https://example.com/webhook">
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Payload (JSON)</div>
+              <textarea class="detail-input" id="payload-${rule.id}">${rule.payload}</textarea>
+            </div>
+          </div>
+        `;
+          container.appendChild(card);
+
+          // ── Toggle handler ──
+          const toggle = document.getElementById(`toggle-${rule.id}`);
+          const statusEl = document.getElementById(`status-${rule.id}`);
+          const replyEl = document.getElementById(`reply-${rule.id}`);
+          const spinnerEl = document.getElementById(`spinner-${rule.id}`);
+          const cardEl = card;
+
+          toggle.addEventListener("change", async () => {
+            if (toggle.checked) {
+              statusEl.textContent = "ON";
+              statusEl.className = "rule-status on";
+              cardEl.classList.add("active");
+
+              const endpoint = document
+                .getElementById(`endpoint-${rule.id}`)
+                .value.trim();
+              const payloadStr = document
+                .getElementById(`payload-${rule.id}`)
+                .value.trim();
+
+              if (!endpoint) {
+                replyEl.textContent =
+                  "Error: No destination endpoint defined. Open Details to set one.";
+                replyEl.className = "reply-box error";
+                toggle.checked = false;
+                statusEl.textContent = "OFF";
+                statusEl.className = "rule-status off";
+                cardEl.classList.remove("active");
+                return;
+              }
+
+              let payload;
+              try {
+                payload = JSON.parse(payloadStr);
+              } catch {
+                replyEl.textContent =
+                  "Error: Invalid JSON payload. Open Details to fix it.";
+                replyEl.className = "reply-box error";
+                toggle.checked = false;
+                statusEl.textContent = "OFF";
+                statusEl.className = "rule-status off";
+                cardEl.classList.remove("active");
+                return;
+              }
+
+              // Merge shared customer fields into payload
+              const custName = document.getElementById("custname").value.trim();
+              const custTel = document.getElementById("custtel").value.trim();
+              if (custName) payload.customer_name = custName;
+              if (custTel) payload.customer_telephone = custTel;
+
+              // Fire webhook
+              spinnerEl.classList.add("active");
+              replyEl.textContent = "Sending...";
+              replyEl.className = "reply-box empty";
+
+              try {
+                const res = await fetch("/api/webhook/send", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ url: endpoint, payload }),
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                  const body =
+                    typeof data.body === "string"
+                      ? data.body
+                      : JSON.stringify(data.body, null, 2);
+                  replyEl.textContent = `${data.status} ${data.statusText}\n${body}`;
+                  replyEl.className = "reply-box success";
+                } else {
+                  replyEl.textContent = `Error: ${data.error}`;
+                  replyEl.className = "reply-box error";
+                }
+              } catch (err) {
+                replyEl.textContent = `Network error: ${err.message}`;
+                replyEl.className = "reply-box error";
+              } finally {
+                spinnerEl.classList.remove("active");
+              }
+            } else {
+              statusEl.textContent = "OFF";
+              statusEl.className = "rule-status off";
+              cardEl.classList.remove("active");
+            }
+          });
+
+          // ── Expand/collapse details ──
+          const expandBtn = document.getElementById(`expand-${rule.id}`);
+          const detailsEl = document.getElementById(`details-${rule.id}`);
+          expandBtn.addEventListener("click", () => {
+            const open = detailsEl.classList.toggle("open");
+            expandBtn.innerHTML = open ? "Details &#9652;" : "Details &#9662;";
+          });
+        });
+      }
+
+      // ── Gather current field values into an array ──
+      function gatherCurrentRules() {
+        return {
+          customerName: document.getElementById("custname").value,
+          customerTel: document.getElementById("custtel").value,
+          rules: defaultRules.map((rule) => ({
+            id: rule.id,
+            endpoint: document.getElementById(`endpoint-${rule.id}`).value,
+            payload: document.getElementById(`payload-${rule.id}`).value,
+          })),
+        };
+      }
+
+      // ── Apply a saved config to the fields ──
+      function applyConfig(saved) {
+        document.getElementById("custname").value = saved.customerName || "";
+        document.getElementById("custtel").value = saved.customerTel || "";
+        (saved.rules || saved).forEach((sr) => {
+          const endpointEl = document.getElementById(`endpoint-${sr.id}`);
+          const payloadEl = document.getElementById(`payload-${sr.id}`);
+          if (endpointEl) endpointEl.value = sr.endpoint || "";
+          if (payloadEl) payloadEl.value = sr.payload || "";
+        });
+      }
+
+      // ── Load config list from server ──
+      async function loadConfigList() {
+        try {
+          const res = await fetch("/api/configs");
+          const data = await res.json();
+          // Clear existing options (keep the first placeholder)
+          configSelect.innerHTML =
+            '<option value="">— Select saved config —</option>';
+          data.names.forEach((name) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            configSelect.appendChild(opt);
+          });
+        } catch (err) {
+          console.error("Failed to load configs:", err);
+        }
+      }
+
+      // ── Save button ──
+      document
+        .getElementById("save-btn")
+        .addEventListener("click", async () => {
+          const name = prompt("Enter a name for this configuration:");
+          if (!name || !name.trim()) return;
+
+          const config = gatherCurrentRules();
+
+          try {
+            const res = await fetch("/api/configs", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: name.trim(), rules: config }),
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+              flashMsg(`Saved "${data.name}"`);
+              await loadConfigList();
+              configSelect.value = data.name;
+            } else {
+              flashMsg(data.error, true);
+            }
+          } catch (err) {
+            flashMsg("Save failed: " + err.message, true);
+          }
+        });
+
+      // ── Load button ──
+      document
+        .getElementById("load-btn")
+        .addEventListener("click", async () => {
+          const name = configSelect.value;
+          if (!name) {
+            flashMsg("Select a config first", true);
+            return;
+          }
+
+          try {
+            const res = await fetch(`/api/configs/${encodeURIComponent(name)}`);
+            const data = await res.json();
+
+            if (data.ok) {
+              applyConfig(data.rules);
+              flashMsg(`Loaded "${name}"`);
+            } else {
+              flashMsg(data.error, true);
+            }
+          } catch (err) {
+            flashMsg("Load failed: " + err.message, true);
+          }
+        });
+
+      // ── Delete button ──
+      document
+        .getElementById("delete-btn")
+        .addEventListener("click", async () => {
+          const name = configSelect.value;
+          if (!name) {
+            flashMsg("Select a config first", true);
+            return;
+          }
+          if (!confirm(`Delete configuration "${name}"?`)) return;
+
+          try {
+            const res = await fetch(
+              `/api/configs/${encodeURIComponent(name)}`,
+              { method: "DELETE" },
+            );
+            const data = await res.json();
+
+            if (data.ok) {
+              flashMsg(`Deleted "${name}"`);
+              await loadConfigList();
+            } else {
+              flashMsg(data.error, true);
+            }
+          } catch (err) {
+            flashMsg("Delete failed: " + err.message, true);
+          }
+        });
+
+      // ── Init ──
+      buildRuleCards();
+      loadConfigList();
+    </script>
+  </body>
+</html>
